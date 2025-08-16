@@ -1,16 +1,16 @@
 import { StatusBar } from "expo-status-bar";
 import { StyleSheet, View } from "react-native";
-import Welcome from "./components/Welcome";
+import { ProductsScreen } from "./components/ProductsScreen";
 
 export default function App() {
   return (
     <View style={styles.container}>
-      <Welcome />
+      <ProductsScreen />
       <StatusBar style="auto" />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: "center", justifyContent: "center" }
+  container: { flex: 1 }
 });
