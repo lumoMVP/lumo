@@ -1,0 +1,11 @@
+{
+  "expo": {
+    "name": "Hyperlocal Starter",
+    "slug": "hyperlocal-starter",
+    "scheme": "hyperlocalstarter",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light"
+  }
+}
+

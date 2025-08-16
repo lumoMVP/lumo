@@ -1,0 +1,283 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2822
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 version: 1.0\
+name: hyperlocal_delivery_mvp\
+scope:\
+  includes:\
+    - Identity & Seller Ops\
+    - Catalog & Inventory\
+    - Cart & Orders\
+  excludes:\
+    - Payments (to be added later)\
+    - Notifications (to be added later)\
+    - Global product catalog (each seller owns their listings)\
+principles:\
+  - Keep everything minimal and reliable; prefer simple flows over features.\
+  - Customer only sees products from sellers within the seller\'92s service radius of the customer\'92s current location.\
+  - One-seller-per-cart policy.\
+  - Seller capacity is enforced via seller_state to protect 10\'9615 min promise.\
+  - All delivery locations are snapshots of current coordinates at checkout.\
+data_model:\
+  tables:\
+    customer:\
+      description: Single user table representing buyers and/or sellers.\
+      fields:\
+        - id: uuid (pk)\
+        - email: text unique not null\
+        - phone: text\
+        - display_name: text\
+        - role: enum['customer','seller','both']\
+        - created_at: timestamptz default now()\
+    seller:\
+      description: Seller profile and fixed attributes.\
+      fields:\
+        - id: uuid (pk)\
+        - customer_id: uuid fk -> customer.id\
+        - store_name: text not null\
+        - geo: geography(point,4326) not null\
+        - service_radius_m: int default 1000\
+        - is_active: boolean default true\
+        - created_at: timestamptz default now()\
+      indexes:\
+        - gist(geo)\
+    seller_delivery_profile:\
+      description: Operational knobs for ETA & SLA calculations.\
+      fields:\
+        - seller_id: uuid pk/fk -> seller.id\
+        - max_concurrent_runs: smallint default 1\
+        - avg_prep_seconds: int default 60\
+        - avg_speed_mps: numeric default 1.6\
+        - hard_promise_sec: int default 600\
+        - allow_micro_batch: boolean default true\
+    seller_state:\
+      description: Live capacity snapshot for safe assignment.\
+      fields:\
+        - seller_id: uuid pk/fk -> seller.id\
+        - active_runs: smallint default 0\
+        - busy_until: timestamptz\
+        - last_heartbeat_at: timestamptz default now()\
+    seller_product:\
+      description: Seller-owned listings (no global catalog).\
+      fields:\
+        - id: uuid (pk)\
+        - seller_id: uuid fk -> seller.id\
+        - name: text not null\
+        - brand: text\
+        - size_text: text\
+        - unit: text\
+        - upc: text\
+        - images: jsonb default []\
+        - allergens: jsonb default []\
+        - category: text\
+        - tags: text[] default \{\}\
+        - description: text\
+        - price_cents: int not null >=0\
+        - qty_on_hand: int not null >=0\
+        - is_listed: boolean default true\
+        - low_stock_threshold: int default 0\
+        - updated_at: timestamptz default now()\
+      indexes:\
+        - (seller_id)\
+        - (is_listed)\
+        - (qty_on_hand)\
+    cart:\
+      description: One active cart per customer per seller; no address stored.\
+      fields:\
+        - id: uuid (pk)\
+        - customer_id: uuid fk -> customer.id\
+        - seller_id: uuid fk -> seller.id\
+        - created_at: timestamptz default now()\
+        - expires_at: timestamptz\
+    cart_item:\
+      description: Items in the cart; references seller_product.\
+      fields:\
+        - id: uuid (pk)\
+        - cart_id: uuid fk -> cart.id\
+        - seller_product_id: uuid fk -> seller_product.id\
+        - qty: int > 0\
+    order_header:\
+      description: High-level order record; immutable delivery location snapshot & lifecycle.\
+      fields:\
+        - id: uuid (pk)\
+        - customer_id: uuid fk -> customer.id\
+        - seller_id: uuid fk -> seller.id\
+        - ship_to_geo: geography(point,4326) not null\
+        - status: enum['PLACED','ACCEPTED','PREP','OUT_FOR_DELIVERY','DELIVERED','CANCELLED']\
+        - promised_by: timestamptz\
+        - placed_at: timestamptz default now()\
+        - accepted_at: timestamptz\
+        - prep_done_at: timestamptz\
+        - out_for_delivery_at: timestamptz\
+        - delivered_at: timestamptz\
+        - cancel_reason: text\
+      indexes:\
+        - gist(ship_to_geo)\
+    order_item:\
+      description: Immutable line snapshots from seller_product at checkout.\
+      fields:\
+        - id: uuid (pk)\
+        - order_id: uuid fk -> order_header.id\
+        - seller_product_id_snapshot: uuid\
+        - name_snapshot: text not null\
+        - brand_snapshot: text\
+        - size_text_snapshot: text\
+        - unit_snapshot: text\
+        - upc_snapshot: text\
+        - unit_price_cents: int not null\
+        - qty: int > 0\
+        - line_total_cents: int not null\
+        - image_url_snapshot: text\
+api:\
+  base_url: /api\
+  authentication: JWT (cookie or header)\
+  endpoints:\
+    # 1) Identity & Seller Ops\
+    - method: GET\
+      path: /sellers\
+      query: [lat, lng, limit, offset]\
+      desc: List sellers within their own service_radius_m of the provided coordinates.\
+    - method: POST\
+      path: /seller/state\
+      body:\
+        is_active: boolean (optional)\
+      desc: Toggle online/offline or update live telemetry in future.\
+    - method: GET\
+      path: /sellers/\{sellerId\}\
+      desc: Get seller profile, distance (if lat/lng passed), and basic stats.\
+    # 2) Catalog & Inventory\
+    - method: GET\
+      path: /sellers/\{sellerId\}/products\
+      query: [listedOnly=true, inStockOnly=true, limit, offset]\
+      desc: List a seller\'92s products.\
+    - method: GET\
+      path: /products/nearby\
+      query: [lat, lng, limit, offset]\
+      desc: All in-stock products from in-radius sellers (joined on distance).\
+    - method: POST\
+      path: /inventory\
+      role: seller\
+      body: \{ name, price_cents, qty_on_hand, ... \}\
+      desc: Create a new seller_product.\
+    - method: PATCH\
+      path: /inventory/\{seller_product_id\}\
+      role: seller\
+      body: \{ price_cents?, qty_on_hand?, is_listed?, ... \}\
+      desc: Update seller_product.\
+    # 3) Cart & Orders\
+    - method: POST\
+      path: /cart\
+      body: \{ seller_id \}\
+      desc: Create a cart for seller (one per seller per customer).\
+    - method: POST\
+      path: /cart/\{cart_id\}/items\
+      body: \{ seller_product_id, qty \}\
+      desc: Add/update item in cart.\
+    - method: GET\
+      path: /cart/\{cart_id\}\
+      desc: Read current cart.\
+    - method: POST\
+      path: /checkout\
+      body: \{ cart_id, lat, lng \}\
+      desc: Validate radius & stock, create order_header + order_items; create delivery_task (QUEUED).\
+    - method: GET\
+      path: /orders/\{order_id\}\
+      desc: Read order status & timeline.\
+    - method: POST\
+      path: /tasks/\{order_id\}/accept\
+      role: seller\
+      desc: Reserve capacity; set order_header.accepted_at/promised_by; task->ASSIGNED.\
+    - method: POST\
+      path: /tasks/\{order_id\}/prep\
+      role: seller\
+      desc: Start prep; order->PREP.\
+    - method: POST\
+      path: /tasks/\{order_id\}/out\
+      role: seller\
+      desc: Start delivery; order->OUT_FOR_DELIVERY.\
+    - method: POST\
+      path: /tasks/\{order_id\}/delivered\
+      role: seller\
+      desc: Mark as delivered; order->DELIVERED; decrement seller_state.active_runs.\
+business_rules:\
+  radius_filtering:\
+    - Sellers must be active and within ST_DWithin(seller.geo, customer_point, seller.service_radius_m).\
+  stock_enforcement:\
+    - Show only seller_product where is_listed = true and qty_on_hand > 0.\
+    - Recheck stock and radius at checkout.\
+  cart_policy:\
+    - Only one seller per cart.\
+  capacity_and_eta:\
+    - Use seller_state row lock during accept to prevent double-assign.\
+    - ETA = max(now, busy_until) + avg_prep_seconds + distance/avg_speed_mps.\
+    - Do not auto-accept if eta exceeds hard_promise_sec.\
+end_to_end_paths:\
+  customer_paths:\
+    - name: Browse nearby sellers -> view catalog -> checkout (happy path)\
+      steps:\
+        - App obtains lat,lng from device.\
+        - GET /sellers?lat&lng -> choose seller.\
+        - GET /sellers/\{sellerId\}/products -> add items.\
+        - POST /cart -> POST /cart/\{cart_id\}/items.\
+        - POST /checkout \{cart_id, lat, lng\}.\
+        - Observe order status transitions until DELIVERED.\
+      success_criteria:\
+        - Order created; accepted within SLA; delivered < 15 min.\
+    - name: Browse all nearby products -> pick seller item -> checkout\
+      steps:\
+        - GET /products/nearby?lat&lng.\
+        - Select product -> auto-create/select cart for that seller.\
+        - Continue to checkout as above.\
+    - name: Seller offline or out of radius\
+      steps:\
+        - GET /sellers?lat&lng returns empty -> show \'93no nearby sellers\'94 UX.\
+      outcome: No order; optional notify-me-later UX (deferred).\
+    - name: Stock changed between browse and checkout\
+      steps:\
+        - POST /checkout fails stock validation.\
+      outcome: Return updated stock/prices; prompt user to edit cart.\
+    - name: Seller at capacity (ETA breach)\
+      steps:\
+        - POST /checkout creates order but task remains QUEUED or rejected for SLA.\
+      outcome: Inform customer; allow retry/switch seller/cancel.\
+    - name: Buyer cancels before delivery\
+      steps:\
+        - If order.status in [PLACED, ACCEPTED, PREP], allow cancel endpoint (future); MVP may be manual.\
+      outcome: Order -> CANCELLED (policy-driven).\
+  seller_paths:\
+    - name: Accept -> Prep -> Deliver (happy path)\
+      steps:\
+        - New order appears in dashboard (PLACED).\
+        - POST /tasks/\{order_id\}/accept -> reserves capacity; promised_by set.\
+        - POST /tasks/\{order_id\}/prep.\
+        - POST /tasks/\{order_id\}/out.\
+        - POST /tasks/\{order_id\}/delivered -> frees capacity.\
+    - name: Reject or no-response timeout\
+      steps:\
+        - Seller ignores order.\
+      outcome: Order -> CANCELLED with reason SELLER_TIMEOUT; cart remains unaffected.\
+    - name: Out of stock discovered in prep\
+      steps:\
+        - Seller edits listing or flags OOS (future endpoint) OR cancels order.\
+      outcome: Order -> CANCELLED (OOS_AFTER_ACCEPT) or amended (future).\
+    - name: Micro-batch nearby orders\
+      preconditions:\
+        - allow_micro_batch = true and addresses within ~100m and ETA within SLA.\
+      steps:\
+        - Second order accepted while first is active; assign same run (batch_id).\
+      outcome: One active run; two orders progress to delivered.\
+qa_checklist:\
+  - All status transitions timestamped.\
+  - Row locks on seller_state during accept.\
+  - Re-validate radius + stock at checkout.\
+  - GIST indexes present on geo fields.\
+  - One-seller-per-cart enforced server-side.\
+files:\
+  - this_file: mvp_requirements.yml\
+  - related:\
+      - MVP_Context.md (project background & rationale)\
+      - hyperlocal_erd.png (optional diagram)}
