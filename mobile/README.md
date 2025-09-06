@@ -24,12 +24,23 @@ A React Native mobile app for hyperlocal food delivery, featuring a product cata
    npm install
    ```
 
-2. Start the development server:
+2. Set up environment variables:
+   ```bash
+   # Copy the example environment file
+   cp .env.example .env
+   
+   # Edit .env with your Supabase credentials
+   # Get these from your Supabase project dashboard
+   SUPABASE_URL=https://your-project-ref.supabase.co
+   SUPABASE_ANON_KEY=your-anon-key-here
+   ```
+
+3. Start the development server:
    ```bash
    npm start
    ```
 
-3. Run on iOS or Android:
+4. Run on iOS or Android:
    ```bash
    npm run ios
    # or
@@ -45,12 +56,28 @@ components/
 ├── ProductCard.tsx         # Individual product card
 └── ProductDetailModal.tsx  # Product detail modal
 
-data/
-└── mockProducts.ts         # Mock product data
+lib/
+├── supabase.ts            # Supabase client configuration
+└── services/              # Database service classes
 
 types/
-└── product.ts             # Product type definitions
+├── product.ts             # Product type definitions
+└── env.d.ts               # Environment variable types
+
+.env                       # Environment variables (not in git)
+.env.example               # Environment variables template
 ```
+
+## Environment Variables
+
+The app uses environment variables for configuration:
+
+- `SUPABASE_URL`: Your Supabase project URL
+- `SUPABASE_ANON_KEY`: Your Supabase anonymous key
+- `APP_NAME`: Application name
+- `APP_VERSION`: Application version
+
+**Important**: Never commit your `.env` file to version control. Use `.env.example` as a template.
 
 ## Mock Products
 

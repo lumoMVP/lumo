@@ -5,7 +5,8 @@ import {
   ScrollView,
   SafeAreaView,
   View,
-  Text
+  Text,
+  Image
 } from 'react-native';
 import { Product } from '../types/product';
 
@@ -24,8 +25,20 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 }) => {
   if (!product) return null;
 
-  const formatPrice = (priceCents: number) => {
-    return `$${(priceCents / 100).toFixed(2)}`;
+  const formatPrice = (price: number) => {
+    return `$${price.toFixed(2)}`;
+  };
+
+  const getProductIcon = (category: string | null) => {
+    const iconMap: { [key: string]: string } = {
+      'Beverages': '🥤',
+      'Desserts': '🍰',
+      'Snacks': '🍿',
+      'Lunch': '🥪',
+      'Breakfast': '🥞',
+      'Dinner': '🍽️',
+    };
+    return iconMap[category || ''] || '🍎';
   };
 
   const handleAddToCart = () => {
@@ -48,45 +61,66 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
         <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
           <View style={{ alignItems: 'center', paddingVertical: 32 }}>
-            <Text style={{ fontSize: 80 }}>{product.images[0]}</Text>
+            {product.image_url ? (
+              <Image 
+                source={{ uri: product.image_url }} 
+                style={{ width: 120, height: 120, borderRadius: 16 }}
+                resizeMode="cover"
+              />
+            ) : (
+              <Text style={{ fontSize: 80 }}>{getProductIcon(product.category || null)}</Text>
+            )}
           </View>
 
           <View style={{ padding: 20 }}>
             <Text style={{ fontSize: 28, fontWeight: 'bold', color: '#333', marginBottom: 8 }}>{product.name}</Text>
-            <Text style={{ fontSize: 18, color: '#666', marginBottom: 16 }}>{product.brand}</Text>
-            <Text style={{ fontSize: 32, fontWeight: 'bold', color: '#007AFF', marginBottom: 24 }}>{formatPrice(product.price_cents)}</Text>
+            {product.description && (
+              <Text style={{ fontSize: 16, color: '#666', marginBottom: 16, lineHeight: 24 }}>{product.description}</Text>
+            )}
+            <Text style={{ fontSize: 32, fontWeight: 'bold', color: '#007AFF', marginBottom: 24 }}>{formatPrice(product.price)}</Text>
             
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' }}>
-              <Text style={{ fontSize: 16, color: '#666', fontWeight: '500' }}>Size:</Text>
-              <Text style={{ fontSize: 16, color: '#333' }}>{product.size_text} {product.unit}</Text>
-            </View>
+            {product.category && (
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' }}>
+                <Text style={{ fontSize: 16, color: '#666', fontWeight: '500' }}>Category:</Text>
+                <Text style={{ fontSize: 16, color: '#333' }}>{product.category}</Text>
+              </View>
+            )}
 
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' }}>
-              <Text style={{ fontSize: 16, color: '#666', fontWeight: '500' }}>Category:</Text>
-              <Text style={{ fontSize: 16, color: '#333' }}>{product.category}</Text>
+              <Text style={{ fontSize: 16, color: '#666', fontWeight: '500' }}>Availability:</Text>
+              <Text style={{ 
+                fontSize: 16, 
+                color: product.available ? '#4CAF50' : '#F44336',
+                fontWeight: '500'
+              }}>
+                {product.available ? 'Available' : 'Unavailable'}
+              </Text>
             </View>
 
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' }}>
               <Text style={{ fontSize: 16, color: '#666', fontWeight: '500' }}>Stock:</Text>
-              <Text style={{ fontSize: 16, color: '#333' }}>{product.qty_on_hand} available</Text>
+              <Text style={{ 
+                fontSize: 16, 
+                color: product.inventory > 0 ? '#4CAF50' : '#F44336',
+                fontWeight: '500'
+              }}>
+                {product.inventory > 0 ? `${product.inventory} in stock` : 'Out of stock'}
+              </Text>
             </View>
 
-            {product.allergens.length > 0 && product.allergens[0] !== 'none' && (
+            {product.seller_id && (
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' }}>
-                <Text style={{ fontSize: 16, color: '#666', fontWeight: '500' }}>Allergens:</Text>
-                <Text style={{ fontSize: 16, color: '#333' }}>{product.allergens.join(', ')}</Text>
+                <Text style={{ fontSize: 16, color: '#666', fontWeight: '500' }}>Seller ID:</Text>
+                <Text style={{ fontSize: 16, color: '#333' }}>{product.seller_id.substring(0, 8)}...</Text>
               </View>
             )}
 
-            <Text style={{ fontSize: 16, color: '#333', lineHeight: 24, marginTop: 24, marginBottom: 20 }}>{product.description}</Text>
-
-            {product.tags.length > 0 && (
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 16 }}>
-                {product.tags.map((tag, index) => (
-                  <View key={index} style={{ backgroundColor: '#F0F0F0', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, marginRight: 8, marginBottom: 8 }}>
-                    <Text style={{ fontSize: 14, color: '#666' }}>{tag}</Text>
-                  </View>
-                ))}
+            {product.created_at && (
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' }}>
+                <Text style={{ fontSize: 16, color: '#666', fontWeight: '500' }}>Added:</Text>
+                <Text style={{ fontSize: 16, color: '#333' }}>
+                  {new Date(product.created_at).toLocaleDateString()}
+                </Text>
               </View>
             )}
           </View>
@@ -94,10 +128,18 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
         <View style={{ padding: 20, borderTopWidth: 1, borderTopColor: '#E5E5E5' }}>
           <TouchableOpacity 
-            style={{ backgroundColor: '#007AFF', borderRadius: 12, paddingVertical: 16, alignItems: 'center' }}
+            style={{ 
+              backgroundColor: product.available && product.inventory > 0 ? '#007AFF' : '#CCCCCC', 
+              borderRadius: 12, 
+              paddingVertical: 16, 
+              alignItems: 'center' 
+            }}
             onPress={handleAddToCart}
+            disabled={!product.available || product.inventory <= 0}
           >
-            <Text style={{ color: 'white', fontSize: 18, fontWeight: '600' }}>Add to Cart</Text>
+            <Text style={{ color: 'white', fontSize: 18, fontWeight: '600' }}>
+              {product.available && product.inventory > 0 ? 'Add to Cart' : 'Out of Stock'}
+            </Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>

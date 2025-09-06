@@ -1,22 +1,14 @@
 export interface Product {
   id: string;
+  seller_id: string | null;
   name: string;
-  brand: string;
-  size_text: string;
-  unit: string;
-  upc: string;
-  images: string[];
-  allergens: string[];
-  category: string;
-  tags: string[];
-  description: string;
-  price_cents: number;
-  qty_on_hand: number;
-  is_listed: boolean;
-  low_stock_threshold: number;
-  seller_id: string;
-  seller_name: string;
-  distance_m: number;
+  description: string | null;
+  price: number;
+  image_url?: string | null;
+  available: boolean | null;
+  category?: string | null;
+  created_at?: string | null;
+  inventory: number;
 }
 
 export interface ProductFilter {

@@ -5,7 +5,17 @@
     "scheme": "hyperlocalstarter",
     "version": "1.0.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "light"
+    "userInterfaceStyle": "light",
+    "platforms": ["ios", "android", "web"],
+    "ios": {
+      "bundleIdentifier": "com.hyperlocal.starter"
+    },
+    "android": {
+      "package": "com.hyperlocal.starter"
+    },
+    "web": {
+      "bundler": "metro"
+    }
   }
 }
 
