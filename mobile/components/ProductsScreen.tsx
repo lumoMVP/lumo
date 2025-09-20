@@ -3,24 +3,30 @@ import {
   View, 
   Text, 
   TouchableOpacity, 
-  SafeAreaView,
-  StatusBar,
   ActivityIndicator,
-  Alert,
   RefreshControl
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { ProductGrid } from './ProductGrid';
 import { ProductDetailModal } from './ProductDetailModal';
 import { Product } from '../types/product';
 import { UserService } from '../lib/services/UserService';
+import { CartService } from '../lib/services/CartService';
+import { RootStackParamList } from '../App';
+import { useCart } from '../contexts/CartContext';
+
+type ProductsScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Products'>;
 
 export const ProductsScreen: React.FC = () => {
+  const navigation = useNavigation<ProductsScreenNavigationProp>();
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { triggerRefresh } = useCart();
 
   // Load products from nearby sellers on component mount
   useEffect(() => {
@@ -63,24 +69,44 @@ export const ProductsScreen: React.FC = () => {
     setSelectedProduct(null);
   };
 
-  const handleAddToCart = (product: Product) => {
-    console.log('Added to cart:', product.name);
-    // TODO: Implement cart functionality
+  const handleAddToCart = async (product: Product) => {
+    try {
+      console.log('Adding to cart:', product.name);
+      
+      // Check if product is available and in stock
+      if (!product.available) {
+        console.log('Product unavailable:', product.name);
+        return;
+      }
+      
+      if (product.inventory <= 0) {
+        console.log('Product out of stock:', product.name);
+        return;
+      }
+
+      // Add to cart
+      const success = await CartService.addToCart(product.id, 1);
+      
+      if (success) {
+        console.log('Successfully added to cart:', product.name);
+        // Trigger cart quantity refresh
+        triggerRefresh();
+      } else {
+        console.log('Failed to add to cart:', product.name);
+      }
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+    }
   };
 
-  const handleCheckout = () => {
-    console.log('Checkout pressed');
-    // TODO: Navigate to checkout screen
-  };
-
-  const handleCartPress = () => {
-    console.log('Cart pressed');
-    // TODO: Navigate to cart screen
-  };
 
   const handleOrdersPress = () => {
     console.log('Orders pressed');
-    // TODO: Navigate to orders screen
+    // TODO: Navigate to orders screen when implemented
+  };
+
+  const handleSettingsPress = () => {
+    navigation.navigate('Settings');
   };
 
   const handleRetry = () => {
@@ -96,26 +122,19 @@ export const ProductsScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
-      <StatusBar barStyle="dark-content" backgroundColor="white" />
+    <View style={{ flex: 1, backgroundColor: 'white' }}>
       
       {/* Header */}
       <View style={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 20 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <Text style={{ fontSize: 16, fontWeight: '600', color: '#333' }}>9:41</Text>
-          <TouchableOpacity style={{ padding: 8 }}>
-            <Text style={{ fontSize: 20, color: '#333' }}>☰</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Text style={{ fontSize: 32, fontWeight: 'bold', color: '#333' }}>Products</Text>
-          {refreshing && (
-            <ActivityIndicator size="small" color="#007AFF" />
-          )}
-        </View>
-        <Text style={{ fontSize: 14, color: '#666', marginTop: 4 }}>
+        <Text style={{ fontSize: 14, color: '#666' }}>
           From sellers within 0.5 miles • Taaha-Customer
         </Text>
+        
+        {refreshing && (
+          <View style={{ alignItems: 'center', marginTop: 10 }}>
+            <ActivityIndicator size="small" color="#007AFF" />
+          </View>
+        )}
       </View>
 
       {/* Product Grid */}
@@ -157,41 +176,22 @@ export const ProductsScreen: React.FC = () => {
         )}
       </View>
 
-      {/* Checkout Button */}
-      <View style={{ paddingHorizontal: 20, paddingVertical: 16 }}>
-        <TouchableOpacity 
-          style={{
-            backgroundColor: '#007AFF',
-            borderRadius: 12,
-            paddingVertical: 16,
-            alignItems: 'center',
-            shadowColor: '#007AFF',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.3,
-            shadowRadius: 8,
-            elevation: 8,
-          }}
-          onPress={handleCheckout}
-        >
-          <Text style={{ color: 'white', fontSize: 18, fontWeight: '600' }}>Checkout</Text>
-        </TouchableOpacity>
-      </View>
 
       {/* Bottom Navigation */}
       <View style={{ flexDirection: 'row', backgroundColor: 'white', borderTopWidth: 1, borderTopColor: '#E5E5E5', paddingVertical: 12, paddingHorizontal: 20 }}>
         <TouchableOpacity style={{ flex: 1, alignItems: 'center', paddingVertical: 8 }}>
-          <Text style={{ fontSize: 20, marginBottom: 4 }}>☰</Text>
+          <Text style={{ fontSize: 20, marginBottom: 4 }}>🛍️</Text>
           <Text style={{ fontSize: 12, color: '#007AFF', fontWeight: '600' }}>Products</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity style={{ flex: 1, alignItems: 'center', paddingVertical: 8 }} onPress={handleCartPress}>
-          <Text style={{ fontSize: 20, marginBottom: 4 }}>🛒</Text>
-          <Text style={{ fontSize: 12, color: '#999' }}>Cart</Text>
         </TouchableOpacity>
         
         <TouchableOpacity style={{ flex: 1, alignItems: 'center', paddingVertical: 8 }} onPress={handleOrdersPress}>
           <Text style={{ fontSize: 20, marginBottom: 4 }}>📋</Text>
           <Text style={{ fontSize: 12, color: '#999' }}>Orders</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={{ flex: 1, alignItems: 'center', paddingVertical: 8 }} onPress={handleSettingsPress}>
+          <Text style={{ fontSize: 20, marginBottom: 4 }}>⚙️</Text>
+          <Text style={{ fontSize: 12, color: '#999' }}>Settings</Text>
         </TouchableOpacity>
       </View>
 
@@ -202,6 +202,6 @@ export const ProductsScreen: React.FC = () => {
         onClose={handleCloseModal}
         onAddToCart={handleAddToCart}
       />
-    </SafeAreaView>
+    </View>
   );
 };

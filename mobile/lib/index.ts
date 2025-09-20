@@ -9,6 +9,8 @@ export { SellerService } from './services/SellerService';
 export { ProductService } from './services/ProductService';
 export { UserService } from './services/UserService';
 export { TestDataService } from './services/TestDataService';
+export { CartService } from './services/CartService';
+export type { CartWithItems } from './services/CartService';
 
 // Type exports
 export type { Database } from './supabase';
@@ -34,3 +36,4 @@ export type {
   ApiResponse,
   PaginatedResponse
 } from '../types/database';
+export { MockAuthService } from "./services/MockAuthService";

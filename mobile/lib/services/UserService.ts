@@ -1,6 +1,8 @@
 import { CustomerService } from './CustomerService';
 import { SellerService } from './SellerService';
 import { ProductService } from './ProductService';
+import { MockAuthService } from './MockAuthService';
+import { MOCK_CUSTOMER_EMAIL, MOCK_SELLER_EMAIL } from '@env';
 
 export interface Location {
   latitude: number;
@@ -19,9 +21,9 @@ export class UserService {
   private static customerId: string | null = null;
   private static sellerId: string | null = null;
   
-  // Default email addresses (can be overridden)
-  private static customerEmail: string = 'taahakamal@yahoo.com';
-  private static sellerEmail: string = 'taaha@example.com';
+  // Default email addresses loaded from environment variables
+  private static customerEmail: string = MOCK_CUSTOMER_EMAIL;
+  private static sellerEmail: string = MOCK_SELLER_EMAIL;
 
   /**
    * Parse PostGIS POINT format to Location object
@@ -252,5 +254,92 @@ export class UserService {
   static clearCache(): void {
     this.customerId = null;
     this.sellerId = null;
+  }
+
+  /**
+   * Initialize with MockAuthService (recommended approach)
+   */
+  static async initializeWithMockAuth(): Promise<boolean> {
+    try {
+      const success = await MockAuthService.initializeMockAuth();
+      if (success) {
+        // Update our cached IDs from the authenticated users
+        const customer = MockAuthService.getCurrentCustomer();
+        const seller = MockAuthService.getCurrentSeller();
+        
+        if (customer && seller) {
+          this.customerId = customer.id;
+          this.sellerId = seller.id;
+          this.customerEmail = customer.email;
+          this.sellerEmail = seller.email;
+        }
+      }
+      return success;
+    } catch (error) {
+      console.error('Error initializing with MockAuth:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get user context using MockAuthService if available, fallback to email lookup
+   */
+  static async getCurrentUserContextWithAuth(): Promise<UserContext> {
+    // Try to use MockAuthService first
+    if (MockAuthService.isAuthenticated()) {
+      const authContext = MockAuthService.getAuthContext();
+      if (authContext) {
+        let currentLocation: Location | null = null;
+        if (authContext.customer?.location) {
+          currentLocation = this.parseLocation(authContext.customer.location);
+        }
+
+        return {
+          customerId: authContext.customer.id,
+          sellerId: authContext.seller.id,
+          currentLocation
+        };
+      }
+    }
+
+    // Fallback to original method
+    return await this.getCurrentUserContext();
+  }
+
+  /**
+   * Check if using MockAuthService
+   */
+  static isUsingMockAuth(): boolean {
+    return MockAuthService.isAuthenticated();
+  }
+
+  /**
+   * Get customer using MockAuthService if available
+   */
+  static async getAuthenticatedCustomer() {
+    if (MockAuthService.isAuthenticated()) {
+      return MockAuthService.getCurrentCustomer();
+    }
+    return await this.getCurrentCustomer();
+  }
+
+  /**
+   * Get seller using MockAuthService if available
+   */
+  static async getAuthenticatedSeller() {
+    if (MockAuthService.isAuthenticated()) {
+      return MockAuthService.getCurrentSeller();
+    }
+    return await this.getCurrentSeller();
+  }
+
+  /**
+   * Update location using MockAuthService if available
+   */
+  static async updateLocationWithAuth(latitude: number, longitude: number): Promise<boolean> {
+    if (MockAuthService.isAuthenticated()) {
+      return await MockAuthService.updateCustomerLocation(latitude, longitude);
+    }
+    return await this.setCustomLocation(latitude, longitude);
   }
 }

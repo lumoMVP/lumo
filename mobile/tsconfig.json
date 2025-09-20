@@ -4,6 +4,8 @@
     "strict": true,
     "jsx": "react-native",
     "noEmit": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "types": ["react", "react-native"]
   }
 }

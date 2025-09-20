@@ -33,8 +33,9 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
         keyExtractor={keyExtractor}
         numColumns={2}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 8, paddingBottom: 20 }}
+        contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 20 }}
         columnWrapperStyle={{ justifyContent: 'space-between' }}
+        ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
         refreshControl={
           onRefresh ? (
             <RefreshControl

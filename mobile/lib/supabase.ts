@@ -155,6 +155,73 @@ export type Database = {
           created_at?: string | null;
         };
       };
+      carts: {
+        Row: {
+          id: string;
+          customer_id: string;
+          status: string;
+          created_at: string;
+          updated_at: string;
+          checked_out_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          customer_id: string;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+          checked_out_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          customer_id?: string;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+          checked_out_at?: string | null;
+        };
+      };
+      cart_items: {
+        Row: {
+          id: string;
+          cart_id: string;
+          product_id: string;
+          quantity: number;
+          unit_price: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          cart_id: string;
+          product_id: string;
+          quantity: number;
+          unit_price?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          cart_id?: string;
+          product_id?: string;
+          quantity?: number;
+          unit_price?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+    };
+    Views: {
+      active_carts: {
+        Row: {
+          id: string;
+          customer_id: string;
+          status: string;
+          created_at: string;
+          updated_at: string;
+          checked_out_at: string | null;
+        };
+      };
     };
   };
 };

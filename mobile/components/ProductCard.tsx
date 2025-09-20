@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Image } from 'react-native';
+import { View, Text, TouchableOpacity, Image, Dimensions } from 'react-native';
 import { Product } from '../types/product';
 
 interface ProductCardProps {
@@ -8,6 +8,9 @@ interface ProductCardProps {
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product, onPress }) => {
+  const screenWidth = Dimensions.get('window').width;
+  const cardWidth = (screenWidth - 40) / 2; // 40 = paddingHorizontal (12) * 2 + margin (8) * 2
+  
   // Handle undefined/null product
   if (!product) {
     return (
@@ -15,8 +18,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onPress }) =>
         backgroundColor: '#f5f5f5',
         borderRadius: 12,
         padding: 16,
-        margin: 8,
-        minHeight: 120,
+        margin: 4,
+        width: cardWidth,
+        height: 200,
         justifyContent: 'center',
         alignItems: 'center',
       }}>
@@ -48,13 +52,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onPress }) =>
         backgroundColor: 'white',
         borderRadius: 12,
         padding: 16,
-        margin: 8,
+        margin: 4,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 3.84,
         elevation: 5,
-        minHeight: 120,
+        width: cardWidth,
+        height: 200,
         justifyContent: 'space-between',
       }}
       onPress={() => onPress(product)}

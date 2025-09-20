@@ -2,6 +2,8 @@ import { UserService } from './UserService';
 import { CustomerService } from './CustomerService';
 import { SellerService } from './SellerService';
 import { ProductService } from './ProductService';
+import { MockAuthService } from './MockAuthService';
+import { MOCK_CUSTOMER_EMAIL, MOCK_SELLER_EMAIL } from '@env';
 
 /**
  * Service to set up test data for development
@@ -9,27 +11,35 @@ import { ProductService } from './ProductService';
  */
 export class TestDataService {
   /**
-   * Set up test data with sample products for existing Taaha users
+   * Set up test data with sample products for authenticated seller
    */
   static async setupTestData(): Promise<void> {
     try {
       console.log('Setting up test data...');
 
-      // Get existing Taaha users
-      const customer = await CustomerService.getByEmail('taaha.customer@example.com');
-      const seller = await SellerService.getByEmail('taaha.seller@example.com');
+      // Use MockAuthService if available, otherwise fall back to email lookup
+      let customer, seller;
+      
+      if (MockAuthService.isAuthenticated()) {
+        customer = MockAuthService.getCurrentCustomer();
+        seller = MockAuthService.getCurrentSeller();
+      } else {
+        // Fallback to environment variables
+        customer = await CustomerService.getByEmail(MOCK_CUSTOMER_EMAIL);
+        seller = await SellerService.getByEmail(MOCK_SELLER_EMAIL);
+      }
 
       if (!customer) {
-        console.error('Taaha-Customer not found in database');
+        console.error('Customer not found in database');
         return;
       }
 
       if (!seller) {
-        console.error('Taaha-Seller not found in database');
+        console.error('Seller not found in database');
         return;
       }
 
-      console.log('Found existing users:');
+      console.log('Found users:');
       console.log('Customer:', customer.name);
       console.log('Seller:', seller.name);
 
@@ -98,8 +108,7 @@ export class TestDataService {
         name: name,
         email: `${name.toLowerCase().replace(' ', '.')}@example.com`,
         phone: '+1234567890',
-        business_name: `${name}'s Shop`,
-        business_type: 'Store',
+        address: `${name}'s Location`,
         location: `POINT(${longitude} ${latitude})`,
         rating: 4.0,
         is_active: true
