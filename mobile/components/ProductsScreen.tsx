@@ -105,6 +105,10 @@ export const ProductsScreen: React.FC = () => {
     // TODO: Navigate to orders screen when implemented
   };
 
+  const handleSellerPress = () => {
+    navigation.navigate('Seller');
+  };
+
   const handleSettingsPress = () => {
     navigation.navigate('Settings');
   };
@@ -183,12 +187,12 @@ export const ProductsScreen: React.FC = () => {
           <Text style={{ fontSize: 20, marginBottom: 4 }}>🛍️</Text>
           <Text style={{ fontSize: 12, color: '#007AFF', fontWeight: '600' }}>Products</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity style={{ flex: 1, alignItems: 'center', paddingVertical: 8 }} onPress={handleOrdersPress}>
-          <Text style={{ fontSize: 20, marginBottom: 4 }}>📋</Text>
-          <Text style={{ fontSize: 12, color: '#999' }}>Orders</Text>
+
+        <TouchableOpacity style={{ flex: 1, alignItems: 'center', paddingVertical: 8 }} onPress={handleSellerPress}>
+          <Text style={{ fontSize: 20, marginBottom: 4 }}>🧑‍💼</Text>
+          <Text style={{ fontSize: 12, color: '#999' }}>Seller</Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity style={{ flex: 1, alignItems: 'center', paddingVertical: 8 }} onPress={handleSettingsPress}>
           <Text style={{ fontSize: 20, marginBottom: 4 }}>⚙️</Text>
           <Text style={{ fontSize: 12, color: '#999' }}>Settings</Text>

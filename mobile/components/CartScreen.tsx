@@ -54,6 +54,10 @@ export const CartScreen: React.FC = () => {
     // TODO: Navigate to orders screen when implemented
   };
 
+  const handleSellerPress = () => {
+    navigation.navigate('Seller');
+  };
+
   const handleSettingsPress = () => {
     navigation.navigate('Settings');
   };
@@ -301,12 +305,12 @@ export const CartScreen: React.FC = () => {
           <Text style={styles.navIcon}>🛍️</Text>
           <Text style={styles.navText}>Products</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.navItem} onPress={handleOrdersPress}>
-          <Text style={styles.navIcon}>📋</Text>
-          <Text style={styles.navText}>Orders</Text>
+
+        <TouchableOpacity style={styles.navItem} onPress={handleSellerPress}>
+          <Text style={styles.navIcon}>🧑‍💼</Text>
+          <Text style={styles.navText}>Seller</Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity style={styles.navItem} onPress={handleSettingsPress}>
           <Text style={styles.navIcon}>⚙️</Text>
           <Text style={styles.navText}>Settings</Text>

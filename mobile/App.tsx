@@ -5,6 +5,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { ProductsScreen } from "./components/ProductsScreen";
 import { CartScreen } from "./components/CartScreen";
 import { SettingsScreen } from "./components/SettingsScreen";
+import { SellerScreen } from "./components/SellerScreen";
 import { CustomHeader } from "./components/CustomHeader";
 import { MockAuthService, UserService } from "./lib";
 import { CartProvider } from "./contexts/CartContext";
@@ -15,6 +16,7 @@ export type RootStackParamList = {
   Products: undefined;
   Cart: undefined;
   Settings: undefined;
+  Seller: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -102,6 +104,11 @@ export default function App() {
             options={{
               header: () => <CustomHeader title="Products" showCart={true} />
             }}
+          />
+          <Stack.Screen 
+            name="Seller" 
+            component={SellerScreen}
+            options={{ title: 'Seller' }}
           />
           <Stack.Screen 
             name="Cart" 
